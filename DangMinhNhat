@@ -1,0 +1,338 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+
+if not LocalPlayer then
+    Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+    LocalPlayer = Players.LocalPlayer
+end
+
+-- ==========================================
+-- 1. XỬ LÝ LỌC PLOTS VÀ CLIENT RENDERED ASSETS
+-- ==========================================
+local plotsFolder = workspace:FindFirstChild("Plots")
+local clientAssets = workspace:FindFirstChild("ClientRenderedAssets")
+local myPlot = nil
+
+if plotsFolder then
+    for _, plot in ipairs(plotsFolder:GetChildren()) do
+        local playerNameObj = plot:FindFirstChild("PlotSign")
+            and plot.PlotSign:FindFirstChild("PlayerPlotSign")
+            and plot.PlotSign.PlayerPlotSign:FindFirstChild("Frame")
+            and plot.PlotSign.PlayerPlotSign.Frame:FindFirstChild("PlayerName")
+
+        if playerNameObj then
+            local ownerName = (playerNameObj:IsA("TextLabel") or playerNameObj:IsA("TextBox")) 
+                and playerNameObj.Text 
+                or tostring(playerNameObj.Value)
+
+            if ownerName == LocalPlayer.Name or ownerName == LocalPlayer.DisplayName then
+                myPlot = plot
+            else
+                plot:Destroy()
+            end
+        else
+            plot:Destroy()
+        end
+    end
+end
+
+if clientAssets and myPlot then
+    local function getAssetPosition(asset)
+        if asset:IsA("Model") then
+            return asset:GetPivot().Position
+        elseif asset:IsA("BasePart") then
+            return asset.Position
+        end
+        return nil
+    end
+
+    local function isInsidePlot(position, plot)
+        local cf, size = plot:GetBoundingBox()
+        local localPos = cf:PointToObjectSpace(position)
+        return math.abs(localPos.X) <= size.X / 2
+           and math.abs(localPos.Y) <= size.Y / 2
+           and math.abs(localPos.Z) <= size.Z / 2
+    end
+
+    for _, asset in ipairs(clientAssets:GetChildren()) do
+        local assetPos = getAssetPosition(asset)
+        if assetPos then
+            if not isInsidePlot(assetPos, myPlot) then
+                asset:Destroy()
+            end
+        else
+            asset:Destroy()
+        end
+    end
+end
+
+-- ==========================================
+-- 2. TẮT HIỂN THỊ TRONG WORKSPACE
+-- ==========================================
+local function hideObject(object)
+    if object:IsA("BasePart") then
+        object.Transparency = 1
+        object.CastShadow = false
+    elseif object:IsA("Decal") or object:IsA("Texture") then
+        object.Transparency = 1
+    elseif object:IsA("Light") or object:IsA("ParticleEmitter") or object:IsA("Trail") or object:IsA("Fire") or object:IsA("Smoke") or object:IsA("Sparkles") then
+        object.Enabled = false
+    end
+end
+
+for _, v in ipairs(workspace:GetDescendants()) do
+    hideObject(v)
+end
+
+workspace.DescendantAdded:Connect(function(v)
+    hideObject(v)
+end)
+
+-- ==========================================
+-- 3. KHỞI TẠO GIAO DIỆN & NÚT BẬT/TẮT
+-- ==========================================
+if CoreGui:FindFirstChild("DMN_X_TMQ_Full") then
+    CoreGui["DMN_X_TMQ_Full"]:Destroy()
+end
+
+local mainGui = Instance.new("ScreenGui", CoreGui)
+mainGui.Name = "DMN_X_TMQ_Full"
+mainGui.ResetOnSpawn = false
+mainGui.IgnoreGuiInset = true
+mainGui.DisplayOrder = 999999999
+
+-- Màn hình đen full phủ kín
+local blackOverlay = Instance.new("Frame", mainGui)
+blackOverlay.Name = "BlackOverlay"
+blackOverlay.Size = UDim2.new(1, 0, 1, 0)
+blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+blackOverlay.ZIndex = 1
+
+-- Label FPS (Luôn hiển thị)
+local fpsLabel = Instance.new("TextLabel", mainGui)
+fpsLabel.Name = "FPSLabel"
+fpsLabel.Size = UDim2.new(0, 300, 0, 50)
+fpsLabel.Position = UDim2.new(0, 10, 0, 10)
+fpsLabel.Font = Enum.Font.FredokaOne
+fpsLabel.TextScaled = true
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextStrokeTransparency = 0
+fpsLabel.Text = "FPS: ..."
+fpsLabel.ZIndex = 10
+fpsLabel.Visible = true
+
+-- Frame trung tâm
+local frame = Instance.new("Frame", mainGui)
+frame.Name = "InfoFrame"
+frame.Size = UDim2.new(1, 0, 0, 220)
+frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.BackgroundTransparency = 1
+frame.ZIndex = 10
+
+local layout = Instance.new("UIListLayout", frame)
+layout.FillDirection = Enum.FillDirection.Vertical
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 2)
+
+local function createLabel(color, order)
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(1, 0, 0, 42)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 40
+    label.TextColor3 = color
+    label.TextStrokeTransparency = 0
+    label.ZIndex = 10
+    label.LayoutOrder = order
+    return label
+end
+
+local nameLabel = createLabel(Color3.new(1, 1, 1), 1)
+local speedLabel = createLabel(Color3.fromRGB(0, 255, 255), 2)
+local moneyLabel = createLabel(Color3.fromRGB(255, 220, 0), 3)
+local topPetLabel = createLabel(Color3.fromRGB(255, 85, 85), 4)
+local timeLabel = createLabel(Color3.new(1, 1, 1), 5)
+
+-- Nút công tắc Bật / Tắt (Tên cố định "DMN X TMQ")
+local toggleBtn = Instance.new("TextButton", mainGui)
+toggleBtn.Name = "ToggleButton"
+toggleBtn.Size = UDim2.new(0, 180, 0, 50)
+toggleBtn.Position = UDim2.new(0.5, -90, 1, -65)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 150, 70)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "DMN X TMQ"
+toggleBtn.TextSize = 18
+toggleBtn.Font = Enum.Font.GothamSemibold
+toggleBtn.ZIndex = 20
+
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", toggleBtn)
+stroke.Color = Color3.fromRGB(0, 0, 0)
+stroke.Thickness = 1.5
+
+-- ==========================================
+-- 4. LOGIC XỬ LÝ CẬP NHẬT VÀ BẬT/TẮT HỆ THỐNG
+-- ==========================================
+local isSystemOn = true
+
+local function formatTime(seconds)
+    local hours = math.floor(seconds / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    return string.format("%02d:%02d:%02d", hours, mins, secs)
+end
+
+local function parseMoneyString(text)
+    if not text then return 0 end
+    local moneyStr = string.match(text, "%((.-)%)") or text
+    moneyStr = string.gsub(moneyStr, "[%$/s%s]", "")
+    
+    local number = tonumber(string.match(moneyStr, "^[%d%.]+"))
+    if not number then return 0 end
+    
+    local suffix = string.match(moneyStr, "%a+$")
+    if suffix then
+        suffix = string.upper(suffix)
+        if suffix == "K" then number = number * 1e3
+        elseif suffix == "M" then number = number * 1e6
+        elseif suffix == "B" then number = number * 1e9
+        elseif suffix == "T" then number = number * 1e12
+        elseif suffix == "QA" then number = number * 1e15
+        elseif suffix == "QI" then number = number * 1e18
+        end
+    end
+    return number
+end
+
+-- Hàm lọc chỉ lấy duy nhất chuỗi tiền (Ví dụ: $10.5M/s)
+local function extractMoneyOnly(rawText)
+    if not rawText then return "N/A" end
+    local moneyOnly = string.match(rawText, "(%$[%d%.]+%a*/s)") or string.match(rawText, "(%$[%d%.]+%a*)") or string.match(rawText, "([%d%.]+%a*/s)")
+    return moneyOnly or rawText
+end
+
+local scrollingFrame = nil
+task.spawn(function()
+    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+    if pGui then
+        local petList = pGui:WaitForChild("PetList", 10)
+        if petList then
+            local notepad = petList:WaitForChild("Frame", 5) and petList.Frame:WaitForChild("Notepad", 5)
+            if notepad then
+                scrollingFrame = notepad:WaitForChild("ScrollingFrame", 5)
+            end
+        end
+    end
+end)
+
+-- Hiệu ứng chữ cầu vồng (Luôn chạy cho FPS)
+local startTime = tick()
+task.spawn(function()
+    local colorHue = 0
+    while true do
+        colorHue = colorHue + 0.01
+        if colorHue > 1 then colorHue = 0 end
+        local rainbowColor = Color3.fromHSV(colorHue, 1, 1)
+        fpsLabel.TextColor3 = rainbowColor
+        timeLabel.TextColor3 = rainbowColor
+        RunService.RenderStepped:Wait()
+    end
+end)
+
+-- Lấy Pet có số tiền cao nhất (Chỉ lấy chuỗi tiền)
+local currentTopPetText = "Đang tìm..."
+task.spawn(function()
+    while task.wait(1) do
+        if isSystemOn then
+            if scrollingFrame then
+                local maxMoney = -1
+                local topPetText = "Không tìm thấy"
+
+                for _, pet in ipairs(scrollingFrame:GetChildren()) do
+                    local mainFrame = pet:FindFirstChild("Main_Frame")
+                    if mainFrame then
+                        local outerTextLabel = mainFrame:FindFirstChild("TextLabel")
+                        if outerTextLabel then
+                            local targetLabel = outerTextLabel:FindFirstChild("TextLabel")
+                            if targetLabel and targetLabel:IsA("TextLabel") then
+                                local moneyValue = parseMoneyString(targetLabel.Text)
+                                if moneyValue > maxMoney then
+                                    maxMoney = moneyValue
+                                    topPetText = extractMoneyOnly(targetLabel.Text)
+                                end
+                            end
+                        end
+                    end
+                end
+                currentTopPetText = topPetText
+            else
+                currentTopPetText = "N/A"
+            end
+        end
+    end
+end)
+
+-- Vòng lặp cập nhật thông tin hiển thị
+local frameCount, lastUpdate = 0, tick()
+RunService.RenderStepped:Connect(function()
+    -- Cập nhật FPS bất kể ON hay OFF
+    frameCount = frameCount + 1
+    local now = tick()
+    if now - lastUpdate >= 1 then
+        fpsLabel.Text = string.format("FPS: %d", math.floor(frameCount / (now - lastUpdate)))
+        frameCount = 0
+        lastUpdate = now
+    end
+
+    if not isSystemOn then return end
+
+    nameLabel.Text = LocalPlayer.Name
+
+    local successSpeed, speedVal = pcall(function()
+        return LocalPlayer.PlayerGui.Money.Bottom.Frame.SpeedValue.CurrentBoost.Text
+    end)
+    speedLabel.Text = "Speed: " .. (successSpeed and tostring(speedVal) or "N/A")
+
+    local successMoney, moneyVal = pcall(function()
+        return LocalPlayer.PlayerGui.Money.Bottom.Frame.Money.Money.Shadow.Text
+    end)
+    moneyLabel.Text = "Money: " .. (successMoney and tostring(moneyVal) or "N/A")
+
+    topPetLabel.Text = currentTopPetText
+
+    local elapsed = tick() - startTime
+    timeLabel.Text = formatTime(elapsed)
+end)
+
+-- Hàm chuyển đổi trạng thái Bật / Tắt Logic
+local function SetSystemState(state)
+    isSystemOn = state
+    blackOverlay.Visible = state
+    frame.Visible = state
+
+    pcall(function()
+        RunService:Set3dRenderingEnabled(not state)
+    end)
+
+    if state then
+        toggleBtn.Text = "DMN X TMQ"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 150, 70)
+        toggleBtn.Position = UDim2.new(0.5, -90, 1, -65)
+    else
+        toggleBtn.Text = "DMN X TMQ"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
+        toggleBtn.Position = UDim2.new(1, -190, 0, 15)
+    end
+end
+
+-- Bắt sự kiện Click nút
+toggleBtn.MouseButton1Click:Connect(function()
+    SetSystemState(not isSystemOn)
+end)
+
+-- Khởi tạo ban đầu ở trạng thái BẬT
+SetSystemState(true)
