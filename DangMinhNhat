@@ -3,6 +3,11 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
+-- Thiết lập giới hạn FPS về 10
+if setfpscap then 
+    setfpscap(10) 
+end
+
 if not LocalPlayer then
     Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
     LocalPlayer = Players.LocalPlayer
