@@ -12,9 +12,6 @@ if not LocalPlayer then
     LocalPlayer = Players.LocalPlayer
 end
 
--- ==========================================
--- 1. XỬ LÝ LỌC PLOTS VÀ CLIENT RENDERED ASSETS
--- ==========================================
 local plotsFolder = workspace:FindFirstChild("Plots")
 local clientAssets = workspace:FindFirstChild("ClientRenderedAssets")
 local myPlot = nil
@@ -24,7 +21,7 @@ if plotsFolder then
         local playerNameObj = plot:FindFirstChild("PlotSign")
             and plot.PlotSign:FindFirstChild("PlayerPlotSign")
             and plot.PlotSign.PlayerPlotSign:FindFirstChild("Frame")
-            and plot.PlotSign.PlayerPlotSign.Frame:FindFirstChild("PlayerName")
+            and plot.PlotSign.PlayerPlotSign:FindFirstChild("PlayerName")
 
         if playerNameObj then
             local ownerName = (playerNameObj:IsA("TextLabel") or playerNameObj:IsA("TextBox")) 
@@ -72,9 +69,6 @@ if clientAssets and myPlot then
     end
 end
 
--- ==========================================
--- 2. TẮT HIỂN THỊ TRONG WORKSPACE
--- ==========================================
 local function hideObject(object)
     if object:IsA("BasePart") then
         object.Transparency = 1
@@ -94,9 +88,6 @@ workspace.DescendantAdded:Connect(function(v)
     hideObject(v)
 end)
 
--- ==========================================
--- 3. KHỞI TẠO GIAO DIỆN & NÚT BẬT/TẮT
--- ==========================================
 if CoreGui:FindFirstChild("DMN_X_TMQ_Full") then
     CoreGui["DMN_X_TMQ_Full"]:Destroy()
 end
@@ -127,7 +118,7 @@ fpsLabel.Visible = true
 
 local frame = Instance.new("Frame", mainGui)
 frame.Name = "InfoFrame"
-frame.Size = UDim2.new(1, 0, 0, 250)
+frame.Size = UDim2.new(1, 0, 0, 220)
 frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
 frame.BackgroundTransparency = 1
@@ -137,9 +128,9 @@ local layout = Instance.new("UIListLayout", frame)
 layout.FillDirection = Enum.FillDirection.Vertical
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 4)
+layout.Padding = UDim.new(0, 2)
 
-local function createRow(color, order)
+local function createRowFrame(order)
     local row = Instance.new("Frame", frame)
     row.Size = UDim2.new(1, 0, 0, 42)
     row.BackgroundTransparency = 1
@@ -150,34 +141,42 @@ local function createRow(color, order)
     rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    rowLayout.Padding = UDim.new(0, 8)
+    rowLayout.Padding = UDim.new(0, 6)
 
     local icon = Instance.new("ImageLabel", row)
+    icon.Name = "Icon"
     icon.Size = UDim2.new(0, 36, 0, 36)
     icon.BackgroundTransparency = 1
-    icon.ZIndex = 10
-    icon.LayoutOrder = 1
     icon.Visible = false
+    icon.LayoutOrder = 1
 
     local label = Instance.new("TextLabel", row)
+    label.Name = "Text"
     label.Size = UDim2.new(0, 0, 1, 0)
     label.AutomaticSize = Enum.AutomaticSize.X
     label.BackgroundTransparency = 1
     label.Font = Enum.Font.GothamBold
     label.TextSize = 36
-    label.TextColor3 = color
     label.TextStrokeTransparency = 0
-    label.ZIndex = 10
     label.LayoutOrder = 2
 
     return row, icon, label
 end
 
-local _, nameIcon, nameLabel = createRow(Color3.new(1, 1, 1), 1)
-local _, speedIcon, speedLabel = createRow(Color3.fromRGB(0, 255, 255), 2)
-local _, moneyIcon, moneyLabel = createRow(Color3.fromRGB(255, 220, 0), 3)
-local _, topPetIcon, topPetLabel = createRow(Color3.fromRGB(255, 85, 85), 4)
-local _, timeIcon, timeLabel = createRow(Color3.new(1, 1, 1), 5)
+local _, _, nameLabel = createRowFrame(1)
+nameLabel.TextColor3 = Color3.new(1, 1, 1)
+
+local _, speedIcon, speedLabel = createRowFrame(2)
+speedLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+
+local _, moneyIcon, moneyLabel = createRowFrame(3)
+moneyLabel.TextColor3 = Color3.fromRGB(255, 220, 0)
+
+local _, topPetIcon, topPetLabel = createRowFrame(4)
+topPetLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
+
+local _, _, timeLabel = createRowFrame(5)
+timeLabel.TextColor3 = Color3.new(1, 1, 1)
 
 local toggleBtn = Instance.new("TextButton", mainGui)
 toggleBtn.Name = "ToggleButton"
@@ -195,9 +194,6 @@ local stroke = Instance.new("UIStroke", toggleBtn)
 stroke.Color = Color3.fromRGB(0, 0, 0)
 stroke.Thickness = 1.5
 
--- ==========================================
--- 4. LOGIC XỬ LÝ CẬP NHẬT VÀ BẬT/TẮT HỆ THỐNG
--- ==========================================
 local isSystemOn = true
 
 local function formatTime(seconds)
@@ -235,54 +231,38 @@ local function extractMoneyOnly(rawText)
     return moneyOnly or rawText
 end
 
--- Lấy Icon Speed
-task.spawn(function()
-    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-    if pGui then
-        local srcSpeedIcon = pGui:WaitForChild("HUD", 5)
-            and pGui.HUD:WaitForChild("GameHUD", 5)
-            and pGui.HUD.GameHUD:WaitForChild("BottomLeft", 5)
-            and pGui.HUD.GameHUD.BottomLeft:WaitForChild("Speed", 5)
-            and pGui.HUD.GameHUD.BottomLeft.Speed:WaitForChild("Icon", 5)
+local function updateIconImage(imgLabel, iconObj)
+    if iconObj then
+        local imgId = ""
+        if (iconObj:IsA("ImageLabel") or iconObj:IsA("ImageButton")) and iconObj.Image ~= "" then
+            imgId = iconObj.Image
+        elseif (iconObj:IsA("Decal") or iconObj:IsA("Texture")) and iconObj.Texture ~= "" then
+            imgId = iconObj.Texture
+        end
 
-        if srcSpeedIcon and srcSpeedIcon:IsA("ImageLabel") then
-            speedIcon.Image = srcSpeedIcon.Image
-            speedIcon.Visible = true
+        if imgId ~= "" then
+            imgLabel.Image = imgId
+            imgLabel.Visible = true
+            return true
         end
     end
-end)
+    imgLabel.Visible = false
+    return false
+end
 
--- Lấy Icon Money
-task.spawn(function()
-    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-    if pGui then
-        local srcMoneyIcon = pGui:WaitForChild("HUD", 5)
-            and pGui.HUD:WaitForChild("GameHUD", 5)
-            and pGui.HUD.GameHUD:WaitForChild("BottomLeft", 5)
-            and pGui.HUD.GameHUD.BottomLeft:WaitForChild("Money", 5)
-            and pGui.HUD.GameHUD.BottomLeft.Money:WaitForChild("Icon", 5)
+local function getPetScrollingFrame()
+    local success, sf = pcall(function()
+        return LocalPlayer.PlayerGui.ActivePets.Frame.ScrollingFrame
+    end)
+    if success and sf then return sf end
 
-        if srcMoneyIcon and srcMoneyIcon:IsA("ImageLabel") then
-            moneyIcon.Image = srcMoneyIcon.Image
-            moneyIcon.Visible = true
-        end
-    end
-end)
+    success, sf = pcall(function()
+        return LocalPlayer.PlayerGui.HUD.ActivePets.Frame.ScrollingFrame
+    end)
+    if success and sf then return sf end
 
--- Lấy ScrollingFrame của Pet
-local scrollingFrame = nil
-task.spawn(function()
-    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-    if pGui then
-        local activePets = pGui:WaitForChild("ActivePets", 5)
-        if activePets then
-            local frameObj = activePets:WaitForChild("Frame", 5)
-            if frameObj then
-                scrollingFrame = frameObj:WaitForChild("ScrollingFrame", 5)
-            end
-        end
-    end
-end)
+    return nil
+end
 
 local startTime = tick()
 task.spawn(function()
@@ -298,34 +278,37 @@ task.spawn(function()
 end)
 
 local currentTopPetText = "Đang tìm..."
+local currentTopPetIconObj = nil
+
 task.spawn(function()
     while task.wait(1) do
         if isSystemOn then
+            local scrollingFrame = getPetScrollingFrame()
             if scrollingFrame then
                 local maxMoney = -1
                 local topPetText = "Không tìm thấy"
+                local foundIcon = nil
 
                 for _, pet in ipairs(scrollingFrame:GetChildren()) do
-                    local mainFrame = pet:FindFirstChild("Main_Frame") or pet:FindFirstChild("Frame") or pet
-                    local targetLabel = mainFrame:FindFirstChildWhichIsA("TextLabel", true)
-                    
-                    if targetLabel then
-                        local moneyValue = parseMoneyString(targetLabel.Text)
-                        if moneyValue > maxMoney then
-                            maxMoney = moneyValue
-                            topPetText = extractMoneyOnly(targetLabel.Text)
-                            
-                            local petImg = mainFrame:FindFirstChildWhichIsA("ImageLabel", true)
-                            if petImg then
-                                topPetIcon.Image = petImg.Image
-                                topPetIcon.Visible = true
+                    if pet:IsA("GuiObject") then
+                        local targetLabel = pet:FindFirstChildWhichIsA("TextLabel", true)
+                        local petIconObj = pet:FindFirstChild("Icon") or pet:FindFirstChildWhichIsA("ImageLabel", true)
+
+                        if targetLabel then
+                            local moneyValue = parseMoneyString(targetLabel.Text)
+                            if moneyValue > maxMoney then
+                                maxMoney = moneyValue
+                                topPetText = extractMoneyOnly(targetLabel.Text)
+                                foundIcon = petIconObj
                             end
                         end
                     end
                 end
                 currentTopPetText = topPetText
+                currentTopPetIconObj = foundIcon
             else
                 currentTopPetText = "N/A"
+                currentTopPetIconObj = nil
             end
         end
     end
@@ -345,25 +328,40 @@ RunService.RenderStepped:Connect(function()
 
     nameLabel.Text = LocalPlayer.Name
 
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    local speedObj = leaderstats and leaderstats:FindFirstChild("Speed")
-    if speedObj then
-        speedLabel.Text = tostring(speedObj.Value)
-    else
-        speedLabel.Text = "N/A"
-    end
-
-    local successMoney, moneyVal = pcall(function()
-        return LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money.Text
+    local speedValText = "N/A"
+    pcall(function()
+        local speedObj = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Speed
+        local hasIcon = updateIconImage(speedIcon, speedObj:FindFirstChild("Icon"))
+        
+        local valObj = speedObj:FindFirstChild("Value")
+        if valObj then
+            speedValText = valObj:IsA("TextLabel") and valObj.Text or tostring(valObj.Value)
+        end
+        
+        speedLabel.Text = (hasIcon and ": " or "") .. speedValText
     end)
-    if not successMoney or not moneyVal then
-        pcall(function()
-            moneyVal = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money.Value.Text
-        end)
-    end
-    moneyLabel.Text = tostring(moneyVal or "N/A")
 
-    topPetLabel.Text = currentTopPetText
+    local moneyValText = "N/A"
+    pcall(function()
+        local moneyObj = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money
+        local hasIcon = updateIconImage(moneyIcon, moneyObj:FindFirstChild("Icon"))
+        
+        if moneyObj:IsA("TextLabel") then
+            moneyValText = moneyObj.Text
+        elseif moneyObj:FindFirstChild("TextLabel") then
+            moneyValText = moneyObj.TextLabel.Text
+        elseif moneyObj:FindFirstChild("Value") then
+            local val = moneyObj.Value
+            moneyValText = val:IsA("TextLabel") and val.Text or tostring(val.Value)
+        else
+            moneyValText = tostring(moneyObj)
+        end
+        
+        moneyLabel.Text = (hasIcon and ": " or "") .. moneyValText
+    end)
+
+    local hasPetIcon = updateIconImage(topPetIcon, currentTopPetIconObj)
+    topPetLabel.Text = (hasPetIcon and ": " or "") .. currentTopPetText
 
     local elapsed = tick() - startTime
     timeLabel.Text = formatTime(elapsed)
