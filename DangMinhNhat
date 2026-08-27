@@ -6,7 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local DEVICE_NAME = _G.DEVICE_NAME or "MÁY 1"
 local SERVER_URL = "https://dangminhnhat2811.loca.lt/track"
-local SEND_INTERVAL = 2
+local SEND_INTERVAL = 1
 
 if setfpscap then 
     setfpscap(10) 
