@@ -1,7 +1,12 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
+
+local DEVICE_NAME = _G.DEVICE_NAME or "MÁY 1"
+local SERVER_URL = "https://DangMinhNhat2811.loca.lt/track"
+local SEND_INTERVAL = 2
 
 if setfpscap then 
     setfpscap(10) 
@@ -206,7 +211,7 @@ end
 local function parseMoneyString(text)
     if not text then return 0 end
     local moneyStr = string.match(text, "%((.-)%)") or text
-    moneyStr = string.gsub(moneyStr, "[%$/s%s]", "")
+    moneyStr = string.gsub(moneyStr, "[%$/s%s,]", "")
 
     local number = tonumber(string.match(moneyStr, "^[%d%.]+"))
     if not number then return 0 end
@@ -314,6 +319,9 @@ task.spawn(function()
     end
 end)
 
+local latestSpeed = "N/A"
+local latestMoney = "N/A"
+
 local frameCount, lastUpdate = 0, tick()
 RunService.RenderStepped:Connect(function()
     frameCount = frameCount + 1
@@ -328,36 +336,32 @@ RunService.RenderStepped:Connect(function()
 
     nameLabel.Text = LocalPlayer.Name
 
-    local speedValText = "N/A"
     pcall(function()
         local speedObj = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Speed
         local hasIcon = updateIconImage(speedIcon, speedObj:FindFirstChild("Icon"))
         
         local valObj = speedObj:FindFirstChild("Value")
         if valObj then
-            speedValText = valObj:IsA("TextLabel") and valObj.Text or tostring(valObj.Value)
+            latestSpeed = valObj:IsA("TextLabel") and valObj.Text or tostring(valObj.Value)
         end
-        
-        speedLabel.Text = (hasIcon and ": " or "") .. speedValText
+        speedLabel.Text = (hasIcon and ": " or "") .. latestSpeed
     end)
 
-    local moneyValText = "N/A"
     pcall(function()
         local moneyObj = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money
         local hasIcon = updateIconImage(moneyIcon, moneyObj:FindFirstChild("Icon"))
         
         if moneyObj:IsA("TextLabel") then
-            moneyValText = moneyObj.Text
+            latestMoney = moneyObj.Text
         elseif moneyObj:FindFirstChild("TextLabel") then
-            moneyValText = moneyObj.TextLabel.Text
+            latestMoney = moneyObj.TextLabel.Text
         elseif moneyObj:FindFirstChild("Value") then
             local val = moneyObj.Value
-            moneyValText = val:IsA("TextLabel") and val.Text or tostring(val.Value)
+            latestMoney = val:IsA("TextLabel") and val.Text or tostring(val.Value)
         else
-            moneyValText = tostring(moneyObj)
+            latestMoney = tostring(moneyObj)
         end
-        
-        moneyLabel.Text = (hasIcon and ": " or "") .. moneyValText
+        moneyLabel.Text = (hasIcon and ": " or "") .. latestMoney
     end)
 
     local hasPetIcon = updateIconImage(topPetIcon, currentTopPetIconObj)
@@ -392,3 +396,45 @@ toggleBtn.MouseButton1Click:Connect(function()
 end)
 
 SetSystemState(true)
+
+local function sendDataToWebTracker()
+    local requestFunc = syn and syn.request or http_request or request or (http and http.request)
+    if not requestFunc then return end
+
+    local moneyValue = parseMoneyString(latestMoney)
+    local speedValue = parseMoneyString(latestSpeed)
+    local petValue = parseMoneyString(currentTopPetText)
+
+    local payload = {
+        username = LocalPlayer.Name,
+        user_id = LocalPlayer.UserId,
+        device = DEVICE_NAME,
+        money = latestMoney,
+        money_val = moneyValue,
+        speed = latestSpeed,
+        speed_val = speedValue,
+        pet = currentTopPetText,
+        pet_val = petValue,
+        time = os.date("%H:%M:%S (%d/%m)")
+    }
+
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json",
+                ["bypass-tunnel-reminder"] = "true",
+                ["User-Agent"] = "RobloxApp"
+            },
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+end
+
+task.spawn(function()
+    while true do
+        sendDataToWebTracker()
+        task.wait(SEND_INTERVAL)
+    end
+end)
