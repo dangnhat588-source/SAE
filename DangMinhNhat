@@ -3,7 +3,6 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Thiết lập giới hạn FPS về 10
 if setfpscap then 
     setfpscap(10) 
 end
@@ -108,14 +107,12 @@ mainGui.ResetOnSpawn = false
 mainGui.IgnoreGuiInset = true
 mainGui.DisplayOrder = 999999999
 
--- Màn hình đen full phủ kín
 local blackOverlay = Instance.new("Frame", mainGui)
 blackOverlay.Name = "BlackOverlay"
 blackOverlay.Size = UDim2.new(1, 0, 1, 0)
 blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
 blackOverlay.ZIndex = 1
 
--- Label FPS (Luôn hiển thị)
 local fpsLabel = Instance.new("TextLabel", mainGui)
 fpsLabel.Name = "FPSLabel"
 fpsLabel.Size = UDim2.new(0, 300, 0, 50)
@@ -128,10 +125,9 @@ fpsLabel.Text = "FPS: ..."
 fpsLabel.ZIndex = 10
 fpsLabel.Visible = true
 
--- Frame trung tâm
 local frame = Instance.new("Frame", mainGui)
 frame.Name = "InfoFrame"
-frame.Size = UDim2.new(1, 0, 0, 220)
+frame.Size = UDim2.new(1, 0, 0, 250)
 frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
 frame.BackgroundTransparency = 1
@@ -141,28 +137,48 @@ local layout = Instance.new("UIListLayout", frame)
 layout.FillDirection = Enum.FillDirection.Vertical
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 2)
+layout.Padding = UDim.new(0, 4)
 
-local function createLabel(color, order)
-    local label = Instance.new("TextLabel", frame)
-    label.Size = UDim2.new(1, 0, 0, 42)
+local function createRow(color, order)
+    local row = Instance.new("Frame", frame)
+    row.Size = UDim2.new(1, 0, 0, 42)
+    row.BackgroundTransparency = 1
+    row.LayoutOrder = order
+
+    local rowLayout = Instance.new("UIListLayout", row)
+    rowLayout.FillDirection = Enum.FillDirection.Horizontal
+    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    rowLayout.Padding = UDim.new(0, 8)
+
+    local icon = Instance.new("ImageLabel", row)
+    icon.Size = UDim2.new(0, 36, 0, 36)
+    icon.BackgroundTransparency = 1
+    icon.ZIndex = 10
+    icon.LayoutOrder = 1
+    icon.Visible = false
+
+    local label = Instance.new("TextLabel", row)
+    label.Size = UDim2.new(0, 0, 1, 0)
+    label.AutomaticSize = Enum.AutomaticSize.X
     label.BackgroundTransparency = 1
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 40
+    label.TextSize = 36
     label.TextColor3 = color
     label.TextStrokeTransparency = 0
     label.ZIndex = 10
-    label.LayoutOrder = order
-    return label
+    label.LayoutOrder = 2
+
+    return row, icon, label
 end
 
-local nameLabel = createLabel(Color3.new(1, 1, 1), 1)
-local speedLabel = createLabel(Color3.fromRGB(0, 255, 255), 2)
-local moneyLabel = createLabel(Color3.fromRGB(255, 220, 0), 3)
-local topPetLabel = createLabel(Color3.fromRGB(255, 85, 85), 4)
-local timeLabel = createLabel(Color3.new(1, 1, 1), 5)
+local _, nameIcon, nameLabel = createRow(Color3.new(1, 1, 1), 1)
+local _, speedIcon, speedLabel = createRow(Color3.fromRGB(0, 255, 255), 2)
+local _, moneyIcon, moneyLabel = createRow(Color3.fromRGB(255, 220, 0), 3)
+local _, topPetIcon, topPetLabel = createRow(Color3.fromRGB(255, 85, 85), 4)
+local _, timeIcon, timeLabel = createRow(Color3.new(1, 1, 1), 5)
 
--- Nút công tắc Bật / Tắt (Tên cố định "DMN X TMQ")
 local toggleBtn = Instance.new("TextButton", mainGui)
 toggleBtn.Name = "ToggleButton"
 toggleBtn.Size = UDim2.new(0, 180, 0, 50)
@@ -195,10 +211,10 @@ local function parseMoneyString(text)
     if not text then return 0 end
     local moneyStr = string.match(text, "%((.-)%)") or text
     moneyStr = string.gsub(moneyStr, "[%$/s%s]", "")
-    
+
     local number = tonumber(string.match(moneyStr, "^[%d%.]+"))
     if not number then return 0 end
-    
+
     local suffix = string.match(moneyStr, "%a+$")
     if suffix then
         suffix = string.upper(suffix)
@@ -213,28 +229,61 @@ local function parseMoneyString(text)
     return number
 end
 
--- Hàm lọc chỉ lấy duy nhất chuỗi tiền (Ví dụ: $10.5M/s)
 local function extractMoneyOnly(rawText)
     if not rawText then return "N/A" end
     local moneyOnly = string.match(rawText, "(%$[%d%.]+%a*/s)") or string.match(rawText, "(%$[%d%.]+%a*)") or string.match(rawText, "([%d%.]+%a*/s)")
     return moneyOnly or rawText
 end
 
+-- Lấy Icon Speed
+task.spawn(function()
+    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+    if pGui then
+        local srcSpeedIcon = pGui:WaitForChild("HUD", 5)
+            and pGui.HUD:WaitForChild("GameHUD", 5)
+            and pGui.HUD.GameHUD:WaitForChild("BottomLeft", 5)
+            and pGui.HUD.GameHUD.BottomLeft:WaitForChild("Speed", 5)
+            and pGui.HUD.GameHUD.BottomLeft.Speed:WaitForChild("Icon", 5)
+
+        if srcSpeedIcon and srcSpeedIcon:IsA("ImageLabel") then
+            speedIcon.Image = srcSpeedIcon.Image
+            speedIcon.Visible = true
+        end
+    end
+end)
+
+-- Lấy Icon Money
+task.spawn(function()
+    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+    if pGui then
+        local srcMoneyIcon = pGui:WaitForChild("HUD", 5)
+            and pGui.HUD:WaitForChild("GameHUD", 5)
+            and pGui.HUD.GameHUD:WaitForChild("BottomLeft", 5)
+            and pGui.HUD.GameHUD.BottomLeft:WaitForChild("Money", 5)
+            and pGui.HUD.GameHUD.BottomLeft.Money:WaitForChild("Icon", 5)
+
+        if srcMoneyIcon and srcMoneyIcon:IsA("ImageLabel") then
+            moneyIcon.Image = srcMoneyIcon.Image
+            moneyIcon.Visible = true
+        end
+    end
+end)
+
+-- Lấy ScrollingFrame của Pet
 local scrollingFrame = nil
 task.spawn(function()
     local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
     if pGui then
-        local petList = pGui:WaitForChild("PetList", 10)
-        if petList then
-            local notepad = petList:WaitForChild("Frame", 5) and petList.Frame:WaitForChild("Notepad", 5)
-            if notepad then
-                scrollingFrame = notepad:WaitForChild("ScrollingFrame", 5)
+        local activePets = pGui:WaitForChild("ActivePets", 5)
+        if activePets then
+            local frameObj = activePets:WaitForChild("Frame", 5)
+            if frameObj then
+                scrollingFrame = frameObj:WaitForChild("ScrollingFrame", 5)
             end
         end
     end
 end)
 
--- Hiệu ứng chữ cầu vồng (Luôn chạy cho FPS)
 local startTime = tick()
 task.spawn(function()
     local colorHue = 0
@@ -248,7 +297,6 @@ task.spawn(function()
     end
 end)
 
--- Lấy Pet có số tiền cao nhất (Chỉ lấy chuỗi tiền)
 local currentTopPetText = "Đang tìm..."
 task.spawn(function()
     while task.wait(1) do
@@ -258,17 +306,19 @@ task.spawn(function()
                 local topPetText = "Không tìm thấy"
 
                 for _, pet in ipairs(scrollingFrame:GetChildren()) do
-                    local mainFrame = pet:FindFirstChild("Main_Frame")
-                    if mainFrame then
-                        local outerTextLabel = mainFrame:FindFirstChild("TextLabel")
-                        if outerTextLabel then
-                            local targetLabel = outerTextLabel:FindFirstChild("TextLabel")
-                            if targetLabel and targetLabel:IsA("TextLabel") then
-                                local moneyValue = parseMoneyString(targetLabel.Text)
-                                if moneyValue > maxMoney then
-                                    maxMoney = moneyValue
-                                    topPetText = extractMoneyOnly(targetLabel.Text)
-                                end
+                    local mainFrame = pet:FindFirstChild("Main_Frame") or pet:FindFirstChild("Frame") or pet
+                    local targetLabel = mainFrame:FindFirstChildWhichIsA("TextLabel", true)
+                    
+                    if targetLabel then
+                        local moneyValue = parseMoneyString(targetLabel.Text)
+                        if moneyValue > maxMoney then
+                            maxMoney = moneyValue
+                            topPetText = extractMoneyOnly(targetLabel.Text)
+                            
+                            local petImg = mainFrame:FindFirstChildWhichIsA("ImageLabel", true)
+                            if petImg then
+                                topPetIcon.Image = petImg.Image
+                                topPetIcon.Visible = true
                             end
                         end
                     end
@@ -281,10 +331,8 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp cập nhật thông tin hiển thị
 local frameCount, lastUpdate = 0, tick()
 RunService.RenderStepped:Connect(function()
-    -- Cập nhật FPS bất kể ON hay OFF
     frameCount = frameCount + 1
     local now = tick()
     if now - lastUpdate >= 1 then
@@ -297,15 +345,23 @@ RunService.RenderStepped:Connect(function()
 
     nameLabel.Text = LocalPlayer.Name
 
-    local successSpeed, speedVal = pcall(function()
-        return LocalPlayer.PlayerGui.Money.Bottom.Frame.SpeedValue.CurrentBoost.Text
-    end)
-    speedLabel.Text = "Speed: " .. (successSpeed and tostring(speedVal) or "N/A")
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    local speedObj = leaderstats and leaderstats:FindFirstChild("Speed")
+    if speedObj then
+        speedLabel.Text = tostring(speedObj.Value)
+    else
+        speedLabel.Text = "N/A"
+    end
 
     local successMoney, moneyVal = pcall(function()
-        return LocalPlayer.PlayerGui.Money.Bottom.Frame.Money.Money.Shadow.Text
+        return LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money.Text
     end)
-    moneyLabel.Text = "Money: " .. (successMoney and tostring(moneyVal) or "N/A")
+    if not successMoney or not moneyVal then
+        pcall(function()
+            moneyVal = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money.Value.Text
+        end)
+    end
+    moneyLabel.Text = tostring(moneyVal or "N/A")
 
     topPetLabel.Text = currentTopPetText
 
@@ -313,7 +369,6 @@ RunService.RenderStepped:Connect(function()
     timeLabel.Text = formatTime(elapsed)
 end)
 
--- Hàm chuyển đổi trạng thái Bật / Tắt Logic
 local function SetSystemState(state)
     isSystemOn = state
     blackOverlay.Visible = state
@@ -334,10 +389,8 @@ local function SetSystemState(state)
     end
 end
 
--- Bắt sự kiện Click nút
 toggleBtn.MouseButton1Click:Connect(function()
     SetSystemState(not isSystemOn)
 end)
 
--- Khởi tạo ban đầu ở trạng thái BẬT
 SetSystemState(true)
