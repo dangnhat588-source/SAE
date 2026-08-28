@@ -74,14 +74,9 @@ if clientAssets and myPlot then
 end
 
 -- ==========================================
--- 2. TẮT HIỂN THỊ TRONG WORKSPACE (BỎ QUA TREADMILLS)
+-- 2. TẮT HIỂN THỊ TRONG WORKSPACE
 -- ==========================================
 local function hideObject(object)
-    -- Kiểm tra nếu object thuộc workspace.__ClientTreadmillRenders thì giữ nguyên không ẩn
-    if object:IsDescendantOf(workspace:FindFirstChild("__ClientTreadmillRenders")) or object.Name == "__ClientTreadmillRenders" then
-        return
-    end
-
     if object:IsA("BasePart") then
         object.Transparency = 1
         object.CastShadow = false
@@ -352,6 +347,7 @@ RunService.RenderStepped:Connect(function()
             moneyIcon.Image = moneyGui.Icon.Image
             moneyIcon.Visible = true
         end
+        speedLabel.Text = speedLabel.Text
         moneyLabel.Text = tostring(moneyGui:IsA("TextLabel") and moneyGui.Text or (moneyGui:FindFirstChildWhichIsA("TextLabel") and moneyGui:FindFirstChildWhichIsA("TextLabel").Text or "N/A"))
     end)
 
