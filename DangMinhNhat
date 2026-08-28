@@ -1,13 +1,9 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local DEVICE_NAME = _G.DEVICE_NAME or "MÁY 1"
-local SERVER_URL = "https://dangminhnhat2811.loca.lt/track"
-local SEND_INTERVAL = 1
-
+-- Thiết lập giới hạn FPS về 10
 if setfpscap then 
     setfpscap(10) 
 end
@@ -17,6 +13,9 @@ if not LocalPlayer then
     LocalPlayer = Players.LocalPlayer
 end
 
+-- ==========================================
+-- 1. XỬ LÝ LỌC PLOTS VÀ CLIENT RENDERED ASSETS
+-- ==========================================
 local plotsFolder = workspace:FindFirstChild("Plots")
 local clientAssets = workspace:FindFirstChild("ClientRenderedAssets")
 local myPlot = nil
@@ -26,7 +25,7 @@ if plotsFolder then
         local playerNameObj = plot:FindFirstChild("PlotSign")
             and plot.PlotSign:FindFirstChild("PlayerPlotSign")
             and plot.PlotSign.PlayerPlotSign:FindFirstChild("Frame")
-            and plot.PlotSign.PlayerPlotSign:FindFirstChild("PlayerName")
+            and plot.PlotSign.PlayerPlotSign.Frame:FindFirstChild("PlayerName")
 
         if playerNameObj then
             local ownerName = (playerNameObj:IsA("TextLabel") or playerNameObj:IsA("TextBox")) 
@@ -74,7 +73,15 @@ if clientAssets and myPlot then
     end
 end
 
+-- ==========================================
+-- 2. TẮT HIỂN THỊ TRONG WORKSPACE (BỎ QUA TREADMILLS)
+-- ==========================================
 local function hideObject(object)
+    -- Kiểm tra nếu object thuộc workspace.__ClientTreadmillRenders thì giữ nguyên không ẩn
+    if object:IsDescendantOf(workspace:FindFirstChild("__ClientTreadmillRenders")) or object.Name == "__ClientTreadmillRenders" then
+        return
+    end
+
     if object:IsA("BasePart") then
         object.Transparency = 1
         object.CastShadow = false
@@ -93,6 +100,9 @@ workspace.DescendantAdded:Connect(function(v)
     hideObject(v)
 end)
 
+-- ==========================================
+-- 3. KHỞI TẠO GIAO DIỆN & NÚT BẬT/TẮT
+-- ==========================================
 if CoreGui:FindFirstChild("DMN_X_TMQ_Full") then
     CoreGui["DMN_X_TMQ_Full"]:Destroy()
 end
@@ -123,7 +133,7 @@ fpsLabel.Visible = true
 
 local frame = Instance.new("Frame", mainGui)
 frame.Name = "InfoFrame"
-frame.Size = UDim2.new(1, 0, 0, 220)
+frame.Size = UDim2.new(1, 0, 0, 250)
 frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
 frame.BackgroundTransparency = 1
@@ -133,55 +143,62 @@ local layout = Instance.new("UIListLayout", frame)
 layout.FillDirection = Enum.FillDirection.Vertical
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 2)
+layout.Padding = UDim.new(0, 4)
 
-local function createRowFrame(order)
-    local row = Instance.new("Frame", frame)
-    row.Size = UDim2.new(1, 0, 0, 42)
-    row.BackgroundTransparency = 1
-    row.LayoutOrder = order
+-- Hàm tạo dòng hiển thị có Icon phía trước
+local function createRowWithIcon(color, order)
+    local rowFrame = Instance.new("Frame", frame)
+    rowFrame.Size = UDim2.new(1, 0, 0, 42)
+    rowFrame.BackgroundTransparency = 1
+    rowFrame.LayoutOrder = order
+    rowFrame.ZIndex = 10
 
-    local rowLayout = Instance.new("UIListLayout", row)
+    local rowLayout = Instance.new("UIListLayout", rowFrame)
     rowLayout.FillDirection = Enum.FillDirection.Horizontal
     rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    rowLayout.Padding = UDim.new(0, 6)
+    rowLayout.Padding = UDim.new(0, 8)
 
-    local icon = Instance.new("ImageLabel", row)
-    icon.Name = "Icon"
-    icon.Size = UDim2.new(0, 36, 0, 36)
-    icon.BackgroundTransparency = 1
-    icon.Visible = false
-    icon.LayoutOrder = 1
+    local iconImage = Instance.new("ImageLabel", rowFrame)
+    iconImage.Size = UDim2.new(0, 36, 0, 36)
+    iconImage.BackgroundTransparency = 1
+    iconImage.ZIndex = 10
+    iconImage.LayoutOrder = 1
+    iconImage.Visible = false
 
-    local label = Instance.new("TextLabel", row)
-    label.Name = "Text"
-    label.Size = UDim2.new(0, 0, 1, 0)
-    label.AutomaticSize = Enum.AutomaticSize.X
+    local textLabel = Instance.new("TextLabel", rowFrame)
+    textLabel.Size = UDim2.new(0, 0, 1, 0)
+    textLabel.AutomaticSize = Enum.AutomaticSize.X
+    textLabel.BackgroundTransparency = 1
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 36
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.ZIndex = 10
+    textLabel.LayoutOrder = 2
+
+    return textLabel, iconImage
+end
+
+local function createLabel(color, order)
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(1, 0, 0, 42)
     label.BackgroundTransparency = 1
     label.Font = Enum.Font.GothamBold
     label.TextSize = 36
+    label.TextColor3 = color
     label.TextStrokeTransparency = 0
-    label.LayoutOrder = 2
-
-    return row, icon, label
+    label.ZIndex = 10
+    label.LayoutOrder = order
+    return label
 end
 
-local _, _, nameLabel = createRowFrame(1)
-nameLabel.TextColor3 = Color3.new(1, 1, 1)
-
-local _, speedIcon, speedLabel = createRowFrame(2)
-speedLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-local _, moneyIcon, moneyLabel = createRowFrame(3)
-moneyLabel.TextColor3 = Color3.fromRGB(255, 220, 0)
-
-local _, topPetIcon, topPetLabel = createRowFrame(4)
-topPetLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
-
-local _, _, timeLabel = createRowFrame(5)
-timeLabel.TextColor3 = Color3.new(1, 1, 1)
+local nameLabel = createLabel(Color3.new(1, 1, 1), 1)
+local speedLabel, speedIcon = createRowWithIcon(Color3.fromRGB(0, 255, 255), 2)
+local moneyLabel, moneyIcon = createRowWithIcon(Color3.fromRGB(255, 220, 0), 3)
+local topPetLabel, topPetIcon = createRowWithIcon(Color3.fromRGB(255, 85, 85), 4)
+local timeLabel = createLabel(Color3.new(1, 1, 1), 5)
 
 local toggleBtn = Instance.new("TextButton", mainGui)
 toggleBtn.Name = "ToggleButton"
@@ -199,6 +216,9 @@ local stroke = Instance.new("UIStroke", toggleBtn)
 stroke.Color = Color3.fromRGB(0, 0, 0)
 stroke.Thickness = 1.5
 
+-- ==========================================
+-- 4. LOGIC XỬ LÝ CẬP NHẬT VÀ BẬT/TẮT HỆ THỐNG
+-- ==========================================
 local isSystemOn = true
 
 local function formatTime(seconds)
@@ -211,7 +231,7 @@ end
 local function parseMoneyString(text)
     if not text then return 0 end
     local moneyStr = string.match(text, "%((.-)%)") or text
-    moneyStr = string.gsub(moneyStr, "[%$/s%s,]", "")
+    moneyStr = string.gsub(moneyStr, "[%$/s%s]", "")
 
     local number = tonumber(string.match(moneyStr, "^[%d%.]+"))
     if not number then return 0 end
@@ -236,38 +256,19 @@ local function extractMoneyOnly(rawText)
     return moneyOnly or rawText
 end
 
-local function updateIconImage(imgLabel, iconObj)
-    if iconObj then
-        local imgId = ""
-        if (iconObj:IsA("ImageLabel") or iconObj:IsA("ImageButton")) and iconObj.Image ~= "" then
-            imgId = iconObj.Image
-        elseif (iconObj:IsA("Decal") or iconObj:IsA("Texture")) and iconObj.Texture ~= "" then
-            imgId = iconObj.Texture
-        end
-
-        if imgId ~= "" then
-            imgLabel.Image = imgId
-            imgLabel.Visible = true
-            return true
+local scrollingFrame = nil
+task.spawn(function()
+    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+    if pGui then
+        local activePets = pGui:WaitForChild("ActivePets", 10)
+        if activePets then
+            local activeFrame = activePets:WaitForChild("Frame", 5)
+            if activeFrame then
+                scrollingFrame = activeFrame:WaitForChild("ScrollingFrame", 5)
+            end
         end
     end
-    imgLabel.Visible = false
-    return false
-end
-
-local function getPetScrollingFrame()
-    local success, sf = pcall(function()
-        return LocalPlayer.PlayerGui.ActivePets.Frame.ScrollingFrame
-    end)
-    if success and sf then return sf end
-
-    success, sf = pcall(function()
-        return LocalPlayer.PlayerGui.HUD.ActivePets.Frame.ScrollingFrame
-    end)
-    if success and sf then return sf end
-
-    return nil
-end
+end)
 
 local startTime = tick()
 task.spawn(function()
@@ -283,44 +284,42 @@ task.spawn(function()
 end)
 
 local currentTopPetText = "Đang tìm..."
-local currentTopPetIconObj = nil
+local currentTopPetIconId = ""
 
 task.spawn(function()
     while task.wait(1) do
         if isSystemOn then
-            local scrollingFrame = getPetScrollingFrame()
             if scrollingFrame then
                 local maxMoney = -1
                 local topPetText = "Không tìm thấy"
-                local foundIcon = nil
+                local topPetIcon = ""
 
                 for _, pet in ipairs(scrollingFrame:GetChildren()) do
                     if pet:IsA("GuiObject") then
-                        local targetLabel = pet:FindFirstChildWhichIsA("TextLabel", true)
-                        local petIconObj = pet:FindFirstChild("Icon") or pet:FindFirstChildWhichIsA("ImageLabel", true)
-
-                        if targetLabel then
-                            local moneyValue = parseMoneyString(targetLabel.Text)
+                        local iconObj = pet:FindFirstChild("Icon") or pet:FindFirstChildWhichIsA("ImageLabel", true)
+                        local textObj = pet:FindFirstChildWhichIsA("TextLabel", true)
+                        
+                        if textObj then
+                            local moneyValue = parseMoneyString(textObj.Text)
                             if moneyValue > maxMoney then
                                 maxMoney = moneyValue
-                                topPetText = extractMoneyOnly(targetLabel.Text)
-                                foundIcon = petIconObj
+                                topPetText = extractMoneyOnly(textObj.Text)
+                                if iconObj and iconObj:IsA("ImageLabel") then
+                                    topPetIcon = iconObj.Image
+                                end
                             end
                         end
                     end
                 end
                 currentTopPetText = topPetText
-                currentTopPetIconObj = foundIcon
+                currentTopPetIconId = topPetIcon
             else
                 currentTopPetText = "N/A"
-                currentTopPetIconObj = nil
+                currentTopPetIconId = ""
             end
         end
     end
 end)
-
-local latestSpeed = "N/A"
-local latestMoney = "N/A"
 
 local frameCount, lastUpdate = 0, tick()
 RunService.RenderStepped:Connect(function()
@@ -336,36 +335,34 @@ RunService.RenderStepped:Connect(function()
 
     nameLabel.Text = LocalPlayer.Name
 
+    -- Speed Icon & Text
     pcall(function()
-        local speedObj = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Speed
-        local hasIcon = updateIconImage(speedIcon, speedObj:FindFirstChild("Icon"))
-        
-        local valObj = speedObj:FindFirstChild("Value")
-        if valObj then
-            latestSpeed = valObj:IsA("TextLabel") and valObj.Text or tostring(valObj.Value)
+        local speedGui = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Speed
+        if speedGui:FindFirstChild("Icon") and speedGui.Icon:IsA("ImageLabel") then
+            speedIcon.Image = speedGui.Icon.Image
+            speedIcon.Visible = true
         end
-        speedLabel.Text = (hasIcon and ": " or "") .. latestSpeed
+        speedLabel.Text = tostring(speedGui.Value.Text)
     end)
 
+    -- Money Icon & Text
     pcall(function()
-        local moneyObj = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money
-        local hasIcon = updateIconImage(moneyIcon, moneyObj:FindFirstChild("Icon"))
-        
-        if moneyObj:IsA("TextLabel") then
-            latestMoney = moneyObj.Text
-        elseif moneyObj:FindFirstChild("TextLabel") then
-            latestMoney = moneyObj.TextLabel.Text
-        elseif moneyObj:FindFirstChild("Value") then
-            local val = moneyObj.Value
-            latestMoney = val:IsA("TextLabel") and val.Text or tostring(val.Value)
-        else
-            latestMoney = tostring(moneyObj)
+        local moneyGui = LocalPlayer.PlayerGui.HUD.GameHUD.BottomLeft.Money
+        if moneyGui:FindFirstChild("Icon") and moneyGui.Icon:IsA("ImageLabel") then
+            moneyIcon.Image = moneyGui.Icon.Image
+            moneyIcon.Visible = true
         end
-        moneyLabel.Text = (hasIcon and ": " or "") .. latestMoney
+        moneyLabel.Text = tostring(moneyGui:IsA("TextLabel") and moneyGui.Text or (moneyGui:FindFirstChildWhichIsA("TextLabel") and moneyGui:FindFirstChildWhichIsA("TextLabel").Text or "N/A"))
     end)
 
-    local hasPetIcon = updateIconImage(topPetIcon, currentTopPetIconObj)
-    topPetLabel.Text = (hasPetIcon and ": " or "") .. currentTopPetText
+    -- Pet Icon & Text
+    topPetLabel.Text = currentTopPetText
+    if currentTopPetIconId ~= "" then
+        topPetIcon.Image = currentTopPetIconId
+        topPetIcon.Visible = true
+    else
+        topPetIcon.Visible = false
+    end
 
     local elapsed = tick() - startTime
     timeLabel.Text = formatTime(elapsed)
@@ -396,45 +393,3 @@ toggleBtn.MouseButton1Click:Connect(function()
 end)
 
 SetSystemState(true)
-
-local function sendDataToWebTracker()
-    local requestFunc = syn and syn.request or http_request or request or (http and http.request)
-    if not requestFunc then return end
-
-    local moneyValue = parseMoneyString(latestMoney)
-    local speedValue = parseMoneyString(latestSpeed)
-    local petValue = parseMoneyString(currentTopPetText)
-
-    local payload = {
-        username = LocalPlayer.Name,
-        user_id = LocalPlayer.UserId,
-        device = DEVICE_NAME,
-        money = latestMoney,
-        money_val = moneyValue,
-        speed = latestSpeed,
-        speed_val = speedValue,
-        pet = currentTopPetText,
-        pet_val = petValue,
-        time = os.date("%H:%M:%S (%d/%m)")
-    }
-
-    pcall(function()
-        requestFunc({
-            Url = SERVER_URL,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json",
-                ["bypass-tunnel-reminder"] = "true",
-                ["User-Agent"] = "RobloxApp"
-            },
-            Body = HttpService:JSONEncode(payload)
-        })
-    end)
-end
-
-task.spawn(function()
-    while true do
-        sendDataToWebTracker()
-        task.wait(SEND_INTERVAL)
-    end
-end)
