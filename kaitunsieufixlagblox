@@ -1,0 +1,102 @@
+local Workspace, Lighting, RunService = game:GetService("Workspace"), game:GetService("Lighting"), game:GetService("RunService")
+
+local gray = Instance.new("ColorCorrectionEffect", Lighting)
+gray.Saturation = -1
+
+local function FixLag(state)
+    gray.Enabled = state
+    Workspace.Terrain.WaterWaveSize = state and 0 or 0.15
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v.Name ~= "Baseplate" and v.Name ~= "Terrain" then 
+            v.Transparency = state and 1 or 0 
+        end
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") then 
+            v.Enabled = not state 
+        end
+    end
+end
+
+local function MaxFPS(state)
+    Lighting.GlobalShadows = not state
+    settings().Rendering.QualityLevel = state and Enum.QualityLevel.Level01 or Enum.QualityLevel.Automatic
+    for _, v in pairs(Lighting:GetDescendants()) do 
+        if v:IsA("PostEffect") and v ~= gray then 
+            v.Enabled = not state 
+        end 
+    end
+end
+
+FixLag(true)
+MaxFPS(true)
+
+if setfpscap then
+    setfpscap(10)
+else
+    warn("Executor không hỗ trợ setfpscap().")
+end
+
+getgenv().Hermanos_Settings = {
+    ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
+    ['PC'] = 'DangMinhNhat',
+}
+task.spawn(function() 
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
+end)
+
+getgenv().Configs = {
+    ["Quest"] = {
+        ["Evo Race V1"] = false,
+        ["Evo Race V2"] = false,
+        ["RGB Haki"] = false,
+        ["Pull Lerver"] = false,
+    },
+    Sword = {},
+    Gun = {},
+    ["Auto Active Race V4"] = false,
+    ["FPS Limit"] = 10,
+    ["Boost FPS"] = true,
+}
+task.spawn(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/kaitun.lua"))()
+end)
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FPSLabelGUI"
+screenGui.Parent = game:GetService("CoreGui")
+screenGui.DisplayOrder = 1000000000
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Parent = screenGui
+textLabel.Size = UDim2.new(0, 300, 0, 50)
+textLabel.Position = UDim2.new(0, 10, 0, 10)
+textLabel.Font = Enum.Font.FredokaOne
+textLabel.TextScaled = true
+textLabel.BackgroundTransparency = 1
+textLabel.TextStrokeTransparency = 0
+textLabel.Text = "FPS: ..."
+
+task.spawn(function()
+    local Dreamon = 0
+    while true do
+        Dreamon = Dreamon + 0.01
+        if Dreamon > 1 then Dreamon = 0 end
+        textLabel.TextColor3 = Color3.fromHSV(Dreamon, 1, 1)
+        RunService.RenderStepped:Wait()
+    end
+end)
+
+local frameCount = 0
+local lastUpdate = tick()
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local now = tick()
+
+    if now - lastUpdate >= 1 then
+        local fps = frameCount / (now - lastUpdate)
+        frameCount = 0
+        lastUpdate = now
+
+        textLabel.Text = string.format("FPS: %d", math.floor(fps))
+    end
+end)
