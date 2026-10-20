@@ -9,7 +9,7 @@ getgenv().Configs = {
     Sword = {},
     Gun = {},
     ["Auto Active Race V4"] = false,
-    ["FPS Limit"] = 10,
+    ["FPS Limit"] = 999, -- Bỏ giới hạn FPS của realkid (đặt mức cao để tránh xung đột với setfpscap 10 bên ngoài)
     ["Boost FPS"] = true,
     ["Hop Near"] = false,
     ["Webhook"] = {
@@ -29,7 +29,6 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 
--- 1. Fix Lag & Boost FPS
 local gray = Instance.new("ColorCorrectionEffect", Lighting)
 gray.Saturation = -1
 
@@ -56,22 +55,17 @@ local function MaxFPS(state)
     end
 end
 
-if Configs["Boost FPS"] then
-    FixLag(true)
-    MaxFPS(true)
-end
+FixLag(true)
+MaxFPS(true)
 
--- 2. Đồng bộ hóa chống xung đột Set FPS (Dùng chung giới hạn từ Configs hoặc mặc định 10)
-local fpsLimit = Configs["FPS Limit"] or 10
+-- Cố định FPS ở mức 10 (đồng thời cho phép chỉnh biến FPS ngoài nếu cần)
+local DesiredFPS = 10 
 if setfpscap then
-    pcall(function()
-        setfpscap(fpsLimit)
-    end)
+    setfpscap(DesiredFPS)
 else
     warn("Executor không hỗ trợ setfpscap().")
 end
 
--- 3. GUI Hiển thị FPS Cầu Vồng
 local parentGui = (pcall(function() return CoreGui end) and CoreGui) or Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui")
@@ -107,7 +101,6 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
--- 4. Tải các Script chính
 task.spawn(function() 
     pcall(function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
