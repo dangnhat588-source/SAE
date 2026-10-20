@@ -1,4 +1,33 @@
-local Workspace, Lighting, RunService = game:GetService("Workspace"), game:GetService("Lighting"), game:GetService("RunService")
+getgenv().Configs = {
+    ["Key"] = "TRAU_B7214D7EA16A7980467362B0937C8FF607BD8B8E4C7C54BF",
+    ["Quest"] = {
+        ["Evo Race V1"] = false,
+        ["Evo Race V2"] = false,
+        ["RGB Haki"] = false,
+        ["Pull Lerver"] = false,
+    },
+    Sword = {},
+    Gun = {},
+    ["Auto Active Race V4"] = false,
+    ["FPS Limit"] = 10,
+    ["Boost FPS"] = true,
+    ["Hop Near"] = false,
+    ["Webhook"] = {
+        ["URL"] = "",
+        ["Interval"] = 300,
+    },
+}
+
+getgenv().Hermanos_Settings = {
+    ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
+    ['PC'] = 'DangMinhNhat',
+}
+
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
 
 local gray = Instance.new("ColorCorrectionEffect", Lighting)
 gray.Saturation = -1
@@ -35,34 +64,11 @@ else
     warn("Executor không hỗ trợ setfpscap().")
 end
 
-getgenv().Hermanos_Settings = {
-    ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
-    ['PC'] = 'DangMinhNhat',
-}
-task.spawn(function() 
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
-end)
-
-getgenv().Configs = {
-    ["Quest"] = {
-        ["Evo Race V1"] = false,
-        ["Evo Race V2"] = false,
-        ["RGB Haki"] = false,
-        ["Pull Lerver"] = false,
-    },
-    Sword = {},
-    Gun = {},
-    ["Auto Active Race V4"] = false,
-    ["FPS Limit"] = 10,
-    ["Boost FPS"] = true,
-}
-task.spawn(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/kaitun.lua"))()
-end)
+local parentGui = (pcall(function() return CoreGui end) and CoreGui) or Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FPSLabelGUI"
-screenGui.Parent = game:GetService("CoreGui")
+screenGui.Parent = parentGui
 screenGui.DisplayOrder = 1000000000
 
 local textLabel = Instance.new("TextLabel")
@@ -75,28 +81,32 @@ textLabel.BackgroundTransparency = 1
 textLabel.TextStrokeTransparency = 0
 textLabel.Text = "FPS: ..."
 
-task.spawn(function()
-    local Dreamon = 0
-    while true do
-        Dreamon = Dreamon + 0.01
-        if Dreamon > 1 then Dreamon = 0 end
-        textLabel.TextColor3 = Color3.fromHSV(Dreamon, 1, 1)
-        RunService.RenderStepped:Wait()
-    end
-end)
-
 local frameCount = 0
 local lastUpdate = tick()
+local hue = 0
 
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(deltaTime)
+    hue = (hue + deltaTime * 0.5) % 1
+    textLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+
     frameCount = frameCount + 1
     local now = tick()
-
     if now - lastUpdate >= 1 then
         local fps = frameCount / (now - lastUpdate)
         frameCount = 0
         lastUpdate = now
-
         textLabel.Text = string.format("FPS: %d", math.floor(fps))
     end
+end)
+
+task.spawn(function() 
+    pcall(function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
+    end)
+end)
+
+task.spawn(function()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/kaitun.lua"))()
+    end)
 end)
