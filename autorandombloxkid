@@ -1,0 +1,290 @@
+repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local Modules = ReplicatedStorage:WaitForChild("Modules")
+local CommF = Remotes:WaitForChild("CommF_")
+
+------------------------------------------------------------------
+-- 1. LOGIC FIX LAG & OPTIMIZE FPS (Giữ nguyên logic của bạn)
+------------------------------------------------------------------
+local gray = Instance.new("ColorCorrectionEffect", Lighting)
+gray.Saturation = -1
+
+local function FixLag(state)
+    gray.Enabled = state
+    Workspace.Terrain.WaterWaveSize = state and 0 or 0.15
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v.Name ~= "Baseplate" and v.Name ~= "Terrain" then 
+            v.Transparency = state and 1 or 0 
+        end
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") then 
+            v.Enabled = not state 
+        end
+    end
+end
+
+local function MaxFPS(state)
+    Lighting.GlobalShadows = not state
+    settings().Rendering.QualityLevel = state and Enum.QualityLevel.Level01 or Enum.QualityLevel.Automatic
+    for _, v in pairs(Lighting:GetDescendants()) do 
+        if v:IsA("PostEffect") and v ~= gray then 
+            v.Enabled = not state 
+        end 
+    end
+end
+
+FixLag(true)
+MaxFPS(true)
+
+if setfpscap then
+    setfpscap(0)
+else
+    warn("Executor không hỗ trợ setfpscap().")
+end
+
+getgenv().Hermanos_Settings = {
+    ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
+    ['PC'] = 'DangMinhNhatRandom',
+}
+task.spawn(function() 
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
+end)
+
+------------------------------------------------------------------
+-- 2. GUI HIỂN THỊ FPS CẦU VỒNG (Giữ nguyên vị trí góc trên trái)
+------------------------------------------------------------------
+local fpsGui = Instance.new("ScreenGui")
+fpsGui.Name = "FPSLabelGUI"
+fpsGui.Parent = game:GetService("CoreGui")
+fpsGui.DisplayOrder = 1000000000
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Parent = fpsGui
+textLabel.Size = UDim2.new(0, 300, 0, 50)
+textLabel.Position = UDim2.new(0, 10, 0, 10)
+textLabel.Font = Enum.Font.FredokaOne
+textLabel.TextScaled = true
+textLabel.BackgroundTransparency = 1
+textLabel.TextStrokeTransparency = 0
+textLabel.Text = "FPS: ..."
+
+task.spawn(function()
+    local Dreamon = 0
+    while true do
+        Dreamon = Dreamon + 0.01
+        if Dreamon > 1 then Dreamon = 0 end
+        textLabel.TextColor3 = Color3.fromHSV(Dreamon, 1, 1)
+        RunService.RenderStepped:Wait()
+    end
+end)
+
+local frameCount = 0
+local lastUpdate = tick()
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local now = tick()
+
+    if now - lastUpdate >= 1 then
+        local fps = frameCount / (now - lastUpdate)
+        frameCount = 0
+        lastUpdate = now
+
+        textLabel.Text = string.format("FPS: %d", math.floor(fps))
+    end
+end)
+
+------------------------------------------------------------------
+-- 3. BẢNG MENU TRẠNG THÁI BLOX FRUITS (To rõ ở giữa màn hình)
+------------------------------------------------------------------
+local statusGui = Instance.new("ScreenGui")
+statusGui.Name = "StatusMenuGui"
+statusGui.ResetOnSpawn = false
+statusGui.Parent = PlayerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 160)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -80)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = statusGui
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(255, 215, 0)
+uiStroke.Thickness = 2
+uiStroke.Parent = mainFrame
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 12)
+uiCorner.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 45)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "⚡ BLOX FRUITS AUTO STATUS ⚡"
+titleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Parent = mainFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -30, 0, 85)
+statusLabel.Position = UDim2.new(0, 15, 0, 50)
+statusLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+statusLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+statusLabel.TextSize = 16
+statusLabel.Font = Enum.Font.SourceSansSemibold
+statusLabel.TextWrapped = true
+statusLabel.Text = "Đang khởi động hệ thống..."
+statusLabel.Parent = mainFrame
+
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 8)
+statusCorner.Parent = statusLabel
+
+local function UpdateStatus(text)
+    statusLabel.Text = text
+end
+
+------------------------------------------------------------------
+-- 4. CHỌN TEAM HẢI QUÂN (MARINES)
+------------------------------------------------------------------
+UpdateStatus("Đang chọn Team Hải Quân (Marines)...")
+pcall(function()
+    CommF:InvokeServer("SetTeam2", "Marines")
+end)
+task.wait(1.5)
+
+------------------------------------------------------------------
+-- 5. HÀM CẤT TRÁI, TẠO FILE "Done" & DISCORD WEBHOOK
+------------------------------------------------------------------
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1456310274243166219/E-d5-s35qO6SZ9-3JuowoiZ_HQ887fWKPuLh-Kj-SlLyRNPgpQ3iqIOVwJx1b0qaWAd_"
+local notifiedFruits = {}
+
+local function CreateDoneFile()
+    if writefile then
+        pcall(function()
+            writefile("Done.txt", "Successfully stored fruit at: " .. os.date("%Y-%m-%d %H:%M:%S"))
+        end)
+    end
+end
+
+local function SendDiscordEmbed(fruitName)
+    local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
+    if not requestFunc then return end
+
+    local payload = HttpService:JSONEncode({
+        ["embeds"] = {
+            {
+                ["title"] = "🍈 Cất Trái Ác Quỷ Thành Công!",
+                ["description"] = string.format("**Tài khoản:** `%s`\n**Đã cất vào kho:** `%s`", LocalPlayer.Name, fruitName),
+                ["color"] = 65280,
+                ["footer"] = {
+                    ["text"] = "Blox Fruits Automation - " .. os.date("%H:%M:%S")
+                }
+            }
+        }
+    })
+
+    pcall(function()
+        requestFunc({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = payload
+        })
+    end)
+end
+
+local function GetFruitPwrName(fruitName)
+    local cleanName = fruitName:gsub(" Fruit", "")
+    return cleanName .. "-" .. cleanName
+end
+
+local function StoreAllFruits()
+    local foundFruits = {}
+
+    local function addFruit(item)
+        if item:IsA("Tool") and item.Name:find("Fruit") and not notifiedFruits[item] then
+            table.insert(foundFruits, item)
+        end
+    end
+
+    if LocalPlayer:FindFirstChild("Backpack") then
+        for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            addFruit(item)
+        end
+    end
+
+    if LocalPlayer.Character then
+        for _, item in ipairs(LocalPlayer.Character:GetChildren()) do
+            addFruit(item)
+        end
+    end
+
+    if getnilinstances then
+        for _, object in ipairs(getnilinstances()) do
+            addFruit(object)
+        end
+    end
+
+    for _, fruitObj in ipairs(foundFruits) do
+        if fruitObj and fruitObj.Parent then
+            local fruitName = fruitObj.Name
+            local pwrName = GetFruitPwrName(fruitName)
+            
+            notifiedFruits[fruitObj] = true
+            UpdateStatus("Đang cất trái: " .. fruitName)
+            
+            local success = pcall(function()
+                CommF:InvokeServer("StoreFruit", pwrName, fruitObj)
+            end)
+            
+            if success then
+                SendDiscordEmbed(fruitName)
+                CreateDoneFile()
+            end
+            
+            task.wait(0.3)
+        end
+    end
+end
+
+------------------------------------------------------------------
+-- 6. VÒNG LẶP RANDOM FRÁI (GACHA MỚI) + CẤT TRÁI
+------------------------------------------------------------------
+local gachaRemote = Modules:WaitForChild("Net"):WaitForChild("RF/GachaNetworkRF")
+
+task.spawn(function()
+    while true do
+        UpdateStatus("Đang tiến hành Random Gacha...")
+        local success = pcall(function()
+            gachaRemote:InvokeServer({
+                Context = "Purchase",
+                BoxName = "ZiolesGacha"
+            })
+        end)
+        
+        if success then
+            UpdateStatus("Random thành công! Đang quét trái để cất...")
+        else
+            UpdateStatus("Đang chờ hoặc không đủ tiền mua Gacha.")
+        end
+        
+        StoreAllFruits()
+        
+        for i = 3, 1, -1 do
+            UpdateStatus("Đang chờ lượt quay tiếp theo... ("..i.."s)")
+            task.wait(1)
+        end
+    end
+end)
