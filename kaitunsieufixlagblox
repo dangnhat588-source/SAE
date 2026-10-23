@@ -9,7 +9,7 @@ getgenv().Configs = {
     Sword = {},
     Gun = {},
     ["Auto Active Race V4"] = false,
-    ["FPS Limit"] = 999, -- Bỏ giới hạn FPS của realkid (đặt mức cao để tránh xung đột với setfpscap 10 bên ngoài)
+    ["FPS Limit"] = 999,
     ["Boost FPS"] = true,
     ["Hop Near"] = false,
     ["Webhook"] = {
@@ -29,6 +29,76 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 
+local LocalPlayer = Players.LocalPlayer
+
+-- ==========================================
+-- CÀI ĐẶT MÀU SẮC TỐI ƯU (VOID & CHARACTER)
+-- ==========================================
+local VOID_COLOR = Color3.fromRGB(0, 0, 0) -- Màu đen tuyền giúp tối ưu phần cứng tốt nhất
+local CHARACTER_COLOR = Color3.fromRGB(163, 162, 165) -- Màu nhân vật/NPC
+
+-- ==========================================
+-- 0. BIẾN BẦU TRỜI & MẶT NƯỚC THÀNH MỘT MÀU DUY NHẤT
+-- ==========================================
+local function optimizeEnvironment()
+	for _, child in ipairs(Lighting:GetChildren()) do
+		if child:IsA("Sky") or child:IsA("Atmosphere") or child:IsA("PostEffect") then
+			child:Destroy()
+		end
+	end
+	
+	local newSky = Instance.new("Sky")
+	newSky.Name = "SolidColorSky"
+	newSky.SkyboxBk = "rbxassetid://0"
+	newSky.SkyboxDn = "rbxassetid://0"
+	newSky.SkyboxFt = "rbxassetid://0"
+	newSky.SkyboxLf = "rbxassetid://0"
+	newSky.SkyboxRt = "rbxassetid://0"
+	newSky.SkyboxUp = "rbxassetid://0"
+	newSky.Parent = Lighting
+	
+	Lighting.Ambient = VOID_COLOR
+	Lighting.OutdoorAmbient = VOID_COLOR
+	Lighting.ColorShift_Bottom = VOID_COLOR
+	Lighting.ColorShift_Top = VOID_COLOR
+
+	pcall(function()
+		local terrain = Workspace:FindFirstChildOfClass("Terrain")
+		if terrain then
+			terrain.WaterColor = VOID_COLOR
+			terrain.WaterTransparency = 0
+			terrain.WaterWaveSize = 0
+			terrain.WaterWaveSpeed = 0
+		end
+	end)
+end
+
+optimizeEnvironment()
+
+-- ==========================================
+-- 1. XỬ LÝ ẨN TOÀN BỘ GUI (PLAYER GUI)
+-- ==========================================
+local function hidePlayerGui()
+	local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
+	if playerGui then
+		for _, gui in ipairs(playerGui:GetChildren()) do
+			if gui:IsA("ScreenGui") and gui.Name ~= "FPSLabelGUI" then
+				gui.Enabled = false
+			end
+		end
+		playerGui.ChildAdded:Connect(function(gui)
+			if gui:IsA("ScreenGui") and gui.Name ~= "FPSLabelGUI" then
+				gui.Enabled = false
+			end
+		end)
+	end
+end
+
+task.spawn(hidePlayerGui)
+
+-- ==========================================
+-- 2. TỐI ƯU ĐỒ HỌA & ÁNH SÁNG
+-- ==========================================
 local gray = Instance.new("ColorCorrectionEffect", Lighting)
 gray.Saturation = -1
 
@@ -58,7 +128,110 @@ end
 FixLag(true)
 MaxFPS(true)
 
--- Cố định FPS ở mức 10 (đồng thời cho phép chỉnh biến FPS ngoài nếu cần)
+Lighting.Brightness = 0
+Lighting.Technology = Enum.Technology.Compatibility
+
+-- ==========================================
+-- 3. HÀM XỬ LÝ NHÂN VẬT & NPC THÀNH 1 MÀU
+-- ==========================================
+local function processCharacter(model)
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	for _, child in ipairs(model:GetChildren()) do
+		if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") or child:IsA("Clothing") or child:IsA("BodyColors") then
+			child:Destroy()
+		elseif child:IsA("Accessory") or child:IsA("Accoutrement") then
+			child:Destroy()
+		elseif child.Name == "Head" then
+			for _, headChild in ipairs(child:GetChildren()) do
+				if headChild:IsA("Decal") then
+					headChild:Destroy()
+				end
+			end
+		end
+	end
+
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Color = CHARACTER_COLOR
+			part.Material = Enum.Material.SmoothPlastic
+			part.Reflectance = 0
+			part.CastShadow = false
+			if part:IsA("MeshPart") then
+				part.TextureID = ""
+			end
+		end
+	end
+end
+
+-- ==========================================
+-- 4. XÓA HIỆU ỨNG VŨ KHÍ & VẬT THỂ
+-- ==========================================
+local function cleanInstance(inst)
+	if inst:IsA("Model") and inst:FindFirstChildOfClass("Humanoid") then
+		processCharacter(inst)
+		return
+	end
+
+	if inst:IsA("ParticleEmitter") 
+		or inst:IsA("Trail") 
+		or inst:IsA("Beam") 
+		or inst:IsA("Fire") 
+		or inst:IsA("Smoke") 
+		or inst:IsA("Sparkles") 
+		or inst:IsA("Highlight") 
+		or inst:IsA("Light") then
+		
+		inst:Destroy()
+
+	elseif inst:IsA("Decal") or inst:IsA("Texture") then
+		if not inst:IsDescendantOf(Workspace) or not inst:FindFirstAncestorOfClass("Model") or not inst:FindFirstAncestorOfClass("Model"):FindFirstChildOfClass("Humanoid") then
+			inst.Texture = ""
+			inst:Destroy()
+		end
+	elseif inst:IsA("BasePart") and not (inst.Parent and inst.Parent:FindFirstChildOfClass("Humanoid")) then
+		inst.Material = Enum.Material.SmoothPlastic
+		inst.Reflectance = 0
+		inst.CastShadow = false
+	elseif inst:IsA("MeshPart") and not (inst.Parent and inst.Parent:FindFirstChildOfClass("Humanoid")) then
+		inst.Material = Enum.Material.SmoothPlastic
+		inst.Reflectance = 0
+		inst.CastShadow = false
+		inst.TextureID = ""
+	end
+end
+
+for _, item in ipairs(Workspace:GetChildren()) do
+	if item:IsA("Model") and item:FindFirstChildOfClass("Humanoid") then
+		processCharacter(item)
+	end
+end
+
+for _, item in ipairs(Workspace:GetDescendants()) do
+	cleanInstance(item)
+end
+
+Workspace.DescendantAdded:Connect(function(child)
+	task.spawn(function()
+		cleanInstance(child)
+		if child:IsA("Model") and child:FindFirstChildOfClass("Humanoid") then
+			processCharacter(child)
+		elseif child.Parent and child.Parent:IsA("Model") and child.Parent:FindFirstChildOfClass("Humanoid") then
+			processCharacter(child.Parent)
+		end
+	end)
+end)
+
+Workspace.CurrentCamera.DescendantAdded:Connect(function(child)
+	task.spawn(function()
+		cleanInstance(child)
+	end)
+end)
+
+-- ==========================================
+-- 5. CỐ ĐỊNH FPS & HIỂN THỊ FPS LABEL
+-- ==========================================
 local DesiredFPS = 10 
 if setfpscap then
     setfpscap(DesiredFPS)
@@ -101,6 +274,9 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
+-- ==========================================
+-- 6. TẢI CÁC SCRIPT NGOÀI (HERMANOS & REALKID)
+-- ==========================================
 task.spawn(function() 
     pcall(function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
