@@ -1,5 +1,5 @@
 getgenv().Configs = {
-    ["Key"] = "TRAU_B7E6935C40BE7B5FDB0E53E8D6D7EC7370A5B670A999568F"; -- Key realkid mới của bạn
+    ["Key"] = "TRAU_A531A0963AD732CCA135AEEFFDFEE4B90F3DF9514C59491E"; -- 29/10 2h07p
     ["Quest"] = {
         ["Evo Race V1"] = true,
         ["Evo Race V2"] = true,
