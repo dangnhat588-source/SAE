@@ -49,24 +49,6 @@ end
 
 optimizeEnvironment()
 
-local function hidePlayerGui()
-	local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
-	if playerGui then
-		for _, gui in ipairs(playerGui:GetChildren()) do
-			if gui:IsA("ScreenGui") and gui.Name ~= "FPSLabelGUI" then
-				gui.Enabled = false
-			end
-		end
-		playerGui.ChildAdded:Connect(function(gui)
-			if gui:IsA("ScreenGui") and gui.Name ~= "FPSLabelGUI" then
-				gui.Enabled = false
-			end
-		end)
-	end
-end
-
-task.spawn(hidePlayerGui)
-
 local gray = Instance.new("ColorCorrectionEffect", Lighting)
 gray.Saturation = -1
 
