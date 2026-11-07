@@ -178,12 +178,6 @@ if Workspace.CurrentCamera then
 	end)
 end
 
-pcall(function()
-    if setfpscap then
-        setfpscap(10)
-    end
-end)
-
 local parentGui
 local successGui = pcall(function()
     parentGui = CoreGui
@@ -255,6 +249,12 @@ task.spawn(function()
         pcall(function()
             collectgarbage("collect")
         end)
+    end
+end)
+
+pcall(function()
+    if setfpscap then
+        setfpscap(10)
     end
 end)
 
