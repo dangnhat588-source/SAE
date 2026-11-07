@@ -173,7 +173,7 @@ Workspace.CurrentCamera.DescendantAdded:Connect(function(child)
 	end)
 end)
 
-local DesiredFPS = 15
+local DesiredFPS = 10
 if setfpscap then
     setfpscap(DesiredFPS)
 else
