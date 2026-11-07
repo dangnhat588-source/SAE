@@ -178,10 +178,9 @@ if Workspace.CurrentCamera then
 	end)
 end
 
-local DesiredFPS = 10
 pcall(function()
     if setfpscap then
-        setfpscap(DesiredFPS)
+        setfpscap(10)
     end
 end)
 
