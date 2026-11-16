@@ -1,5 +1,5 @@
 getgenv().Configs = {
-    ["Key"] = "TRAU_ABF7AE475E11BFC69DCFF87E357D8F5A1B89BE2937CAC260"; -- Để trống để dùng key đã lưu hoặc nhập qua UI
+    ["Key"] = "TRAU_ABF7AE475E11BFC69DCFF87E357D8F5A1B89BE2937CAC260";
     ["Quest"] = {
         ["Evo Race V1"] = false;
         ["Evo Race V2"] = false;
@@ -18,13 +18,173 @@ getgenv().Configs = {
     ["FPS Limit"] = 10;
     ["Auto Load"] = true;
     ["Boost FPS"] = true;
-    ["Hop Fruits"] = true; -- Bật để hop tìm trái 1M lên sea 3
-    ["Hop Near"] = {Enabled = false; Distance = 500;};-- Hop khi có người chơi khác ở gần i'm gay
+    ["Hop Fruits"] = true;
+    ["Hop Near"] = {Enabled = false; Distance = 500;};
     ["Webhook"] = {
-        ["URL"] = ""; -- Discord webhook URL; để trống để tắt
-        ["Interval"] = 300; -- Gửi báo cáo mỗi 300 giây
+        ["URL"] = "";
+        ["Interval"] = 300;
     };
 };
-loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/kaitun.lua"))()
 
- 
+getgenv().Hermanos_Settings = {
+    ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
+    ['PC'] = 'DangNhat One',
+}
+
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local LocalPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local BLACKLIST_URL = "https://raw.githubusercontent.com/dangnhat588-source/TOOL-REJOIN-/refs/heads/main/nhinconcac"
+local OFFSET_Y = 40 
+local SCAN_INTERVAL = 60
+local MAX_EMPTY_SCANS = 5
+
+local noTargetCount = 0
+local stopped = false
+
+local function getBlacklist()
+	local success, result = pcall(function()
+		return game:HttpGet(BLACKLIST_URL)
+	end)
+	
+	local t = {}
+	if success and result then
+		for line in result:gmatch("[^\r\n]+") do
+			local trimmed = line:match("^%s*(.-)%s*$")
+			if trimmed ~= "" then
+				t[trimmed:lower()] = true
+			end
+		end
+	end
+	return t
+end
+
+local function clickCenter()
+	local size = camera.ViewportSize
+	local x, y = size.X / 2, (size.Y / 2) + OFFSET_Y
+	VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+	task.wait(0.05)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+end
+
+local function processTarget(p, blacklist)
+	if p ~= LocalPlayer then
+		local name = p.Name:lower()
+		local dName = p.DisplayName:lower()
+		local id = tostring(p.UserId)
+		
+		if blacklist[name] or blacklist[dName] or blacklist[id] then
+			pcall(function()
+				StarterGui:SetCore("PromptBlockPlayer", p)
+			end)
+			
+			task.wait(2)
+			clickCenter()
+			task.wait(2)
+			return true
+		end
+	end
+	return false
+end
+
+task.spawn(function()
+	while not stopped do
+		local blacklist = getBlacklist()
+		local foundAny = false
+		
+		for _, p in ipairs(Players:GetPlayers()) do
+			if processTarget(p, blacklist) then
+				foundAny = true
+			end
+		end
+		
+		if foundAny then
+			noTargetCount = 0
+		else
+			noTargetCount = noTargetCount + 1
+			if noTargetCount >= MAX_EMPTY_SCANS then
+				stopped = true
+				break
+			end
+		end
+		
+		task.wait(SCAN_INTERVAL)
+	end
+end)
+
+Players.PlayerAdded:Connect(function(newPlayer)
+	if stopped then return end
+	task.wait(2)
+	local blacklist = getBlacklist()
+	if processTarget(newPlayer, blacklist) then
+		noTargetCount = 0
+	end
+end)
+
+local parentGui
+local successGui = pcall(function()
+    parentGui = CoreGui
+end)
+if not successGui or not parentGui then
+    parentGui = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FPSLabelGUI"
+screenGui.Parent = parentGui
+screenGui.DisplayOrder = 1000000000
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Parent = screenGui
+textLabel.Size = UDim2.new(0, 300, 0, 50)
+textLabel.Position = UDim2.new(0, 10, 0, 10)
+textLabel.Font = Enum.Font.FredokaOne
+textLabel.TextScaled = true
+textLabel.BackgroundTransparency = 1
+textLabel.TextStrokeTransparency = 0
+textLabel.Text = "FPS: ..."
+
+local frameCount = 0
+local lastUpdate = os.clock()
+local hue = 0
+
+RunService.RenderStepped:Connect(function(deltaTime)
+    hue = (hue + deltaTime * 0.5) % 1
+    textLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+
+    frameCount = frameCount + 1
+    local now = os.clock()
+    if now - lastUpdate >= 1 then
+        local fps = frameCount / (now - lastUpdate)
+        frameCount = 0
+        lastUpdate = now
+        textLabel.Text = string.format("FPS: %d", math.floor(fps))
+    end
+end)
+
+task.spawn(function() 
+    pcall(function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
+    end)
+end)
+
+task.spawn(function() 
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/kaitun.lua"))() 
+    end)
+end)
+
+task.spawn(function()
+    task.wait(10)
+    pcall(function()
+        if setfpscap then
+            setfpscap(10)
+        end
+    end)
+end)
