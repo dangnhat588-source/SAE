@@ -28,7 +28,7 @@ getgenv().Configs = {
 
 getgenv().Hermanos_Settings = {
     ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
-    ['PC'] = 'DangNhat One',
+    ['PC'] = 'DangNhat UpV4',
 }
 
 local RunService = game:GetService("RunService")
