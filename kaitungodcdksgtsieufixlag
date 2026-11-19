@@ -1,5 +1,5 @@
 getgenv().Configs = {
-    ["Key"] = "TRAU_379C1A13073A9F1FB7D66C98FEF6287165621DCD8D09156D";
+    ["Key"] = "TRAU_6DE4FB61670CADB44A4C8B71F81269F855BA228B016CB232";
     ["Quest"] = {
         ["Evo Race V1"] = false;
         ["Evo Race V2"] = false;
