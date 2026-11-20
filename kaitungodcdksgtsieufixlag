@@ -1,34 +1,6 @@
-getgenv().Configs = {
-    ["Key"] = "TRAU_6DE4FB61670CADB44A4C8B71F81269F855BA228B016CB232";
-    ["Quest"] = {
-        ["Evo Race V1"] = false;
-        ["Evo Race V2"] = false;
-        ["RGB Haki"] = true;
-        ["Pull Lerver"] = true;
-    };
-    Sword = {
-        "Yama";
-        "Tushita";
-        "Cursed Dual Katana";
-    };
-    Gun = {
-        "Skull Guitar";
-    };
-    ["Auto Active Race V4"] = true;
-    ["FPS Limit"] = 10;
-    ["Auto Load"] = true;
-    ["Boost FPS"] = true;
-    ["Hop Fruits"] = true;
-    ["Hop Near"] = {Enabled = false; Distance = 500;};
-    ["Webhook"] = {
-        ["URL"] = "";
-        ["Interval"] = 300;
-    };
-};
-
 getgenv().Hermanos_Settings = {
     ['key'] = '8270c013-6acd-48c9-98d0-eed6edeebc54',
-    ['PC'] = 'DangNhat UpV4',
+    ['PC'] = 'DangNhat One',
 }
 
 local RunService = game:GetService("RunService")
@@ -127,6 +99,12 @@ Players.PlayerAdded:Connect(function(newPlayer)
 	end
 end)
 
+pcall(function()
+    if setfpscap then
+        setfpscap(10)
+    end
+end)
+
 local parentGui
 local successGui = pcall(function()
     parentGui = CoreGui
@@ -168,23 +146,17 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
-task.spawn(function() 
-    pcall(function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
-    end)
-end)
-
-task.spawn(function() 
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/realkidhub/realkid/refs/heads/main/kaitun.lua"))() 
-    end)
-end)
-
 task.spawn(function()
     task.wait(10)
     pcall(function()
         if setfpscap then
             setfpscap(10)
         end
+    end)
+end)
+
+task.spawn(function() 
+    pcall(function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/hermanos-dev/hermanos-script/main/main.lua'))() 
     end)
 end)
