@@ -1,7 +1,7 @@
 getgenv().PC_Name = getgenv().PC_Name or "DangNhat One"
 
 getgenv().Configs = {
-    ["Key"] = "TRAU_226358854E710813D8094D47E32A2B54EA62DA731103D38E";
+    ["Key"] = "TRAU_0829ED698AFCCB6A68BB14DD0875140C6E5F30495CAB8323";
     ["Quest"] = {
         ["Evo Race V1"] = true;
         ["Evo Race V2"] = true;
