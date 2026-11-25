@@ -1,5 +1,5 @@
 getgenv().config = {
-    Key = "TRAU_226358854E710813D8094D47E32A2B54EA62DA731103D38E", -- Paste your key here
+    Key = "TRAU_PREMIUM_C23E45E74D6A79015DD41575B13DA1EF2855A0688BE7B810", -- Paste your key here
     Language = "vi", -- "vi" / "en"
     Enabled = true,
     ["Auto Load"] = true, -- Reload script and restore this config after teleport.
