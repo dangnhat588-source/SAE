@@ -11,7 +11,7 @@ getgenv().config = {
     HelpGhoulV3 = false, -- Use the first two Help.Account usernames for Main's Ghoul V3 quest.
     Main = {
         Account = {"YasminSchroederWal29"}, --Usernames/tài khoản ex/ví dụ: {"ccc","lol"}
-        Tier = 10,
+        Tier = 6,
         Gear = "A-B-A", -- A = Red, B = Blue
     },
     Help = { Account = {"EYTHANGDADEN","NHATPROCOM"}, Reset = true},--Usernames/tài khoản ex/ví dụ: {"ccc","lol"}
